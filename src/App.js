@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
@@ -13,6 +13,10 @@ function App() {
   const [newMessage, setNewMessage] = useState('');
   const [loadingMessage, setLoadingMessage] = useState(false);
   const [error, setError] = useState('');
+  const [isPopoutOpen, setIsPopoutOpen] = useState(false);
+
+  // Ref to scroll to the last message
+  const lastMessageRef = useRef(null);
 
   // Fetch bot status
   const fetchBotStatus = async () => {
@@ -87,6 +91,18 @@ function App() {
     setTheme((prevTheme) => (prevTheme === 'light-mode' ? 'dark-mode' : 'light-mode'));
   };
 
+  // Open or close the popout window
+  const togglePopout = () => {
+    setIsPopoutOpen(!isPopoutOpen);
+  };
+
+  // Scroll to the last message on messages update
+  useEffect(() => {
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]); // Run this effect every time messages change
+
   // Component to show Bot Status
   const BotStatus = () => (
     <div>
@@ -102,58 +118,8 @@ function App() {
     </div>
   );
 
-  // Component to show Servers and Channels (Only shows when no server/channel is selected)
+  // Component to show Servers and Channels
   const ServerSelection = () => {
-    if (selectedServer && selectedChannel) {
-      return (
-        <div>
-          <h2>Messages</h2>
-          <div>
-            {/* Button changed to "Back to Selection" */}
-            <button onClick={() => {
-              setSelectedServer(null);
-              setSelectedChannel(null);
-              setMessages([]); // Clear previous messages
-              setCurrentPage('messages'); // Go back to the server/channel selection page
-            }}>
-              Back to Selection
-            </button>
-          </div>
-          <div className="message-history">
-            {messages
-              .slice()
-              .reverse()
-              .map((msg) => (
-                <div key={msg.id} className="message">
-                  <img
-                    src={msg.authorAvatar || 'default-avatar.png'}
-                    alt={`${msg.author}'s avatar`}
-                    className="avatar"
-                  />
-                  <div className="message-content">
-                    <div className="message-header">
-                      <strong className="author">{msg.author}</strong>
-                      <span className="timestamp">{new Date(msg.timestamp).toLocaleString()}</span>
-                    </div>
-                    <p className="message-text">{msg.content}</p>
-                  </div>
-                </div>
-              ))}
-          </div>
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message here"
-          />
-          <button onClick={sendMessage} disabled={loadingMessage}>
-            {loadingMessage ? 'Sending...' : 'Send'}
-          </button>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-        </div>
-      );
-    }
-
     return (
       <div>
         <h2>Select a Server</h2>
@@ -199,13 +165,47 @@ function App() {
     );
   };
 
-  useEffect(() => {
-    if (currentPage === 'dashboard') {
-      fetchBotStatus();
-    } else if (currentPage === 'messages') {
-      fetchServers();
-    }
-  }, [currentPage]);
+  // Component to show live messages in popout
+  const PopoutMessages = () => (
+    <div className="popout-window">
+      <div className="popout-header">
+        <button onClick={togglePopout}>Close</button>
+      </div>
+      <div className="message-history">
+        {messages
+          .slice()
+          .reverse()
+          .map((msg) => (
+            <div key={msg.id} className="message">
+              <img
+                src={msg.authorAvatar || 'default-avatar.png'}
+                alt={`${msg.author}'s avatar`}
+                className="avatar"
+              />
+              <div className="message-content">
+                <div className="message-header">
+                  <strong className="author">{msg.author}</strong>
+                  <span className="timestamp">{new Date(msg.timestamp).toLocaleString()}</span>
+                </div>
+                <p className="message-text">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+        {/* Empty div that will be referenced to scroll to the bottom */}
+        <div ref={lastMessageRef} />
+      </div>
+      <input
+        type="text"
+        value={newMessage}
+        onChange={(e) => setNewMessage(e.target.value)}
+        placeholder="Type your message here"
+      />
+      <button onClick={sendMessage} disabled={loadingMessage}>
+        {loadingMessage ? 'Sending...' : 'Send'}
+      </button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+    </div>
+  );
 
   return (
     <div className={`App ${theme}`}>
@@ -220,6 +220,8 @@ function App() {
         {currentPage === 'dashboard' && <BotStatus />}
         {currentPage === 'messages' && <ServerSelection />}
       </main>
+
+      {isPopoutOpen && <PopoutMessages />}
 
       <button className="theme-toggle" onClick={toggleTheme}>
         🌙 / 🌞
