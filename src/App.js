@@ -110,7 +110,14 @@ function App() {
           <h2>Messages</h2>
           <div>
             {/* Button changed to "Back to Selection" */}
-            <button onClick={() => setCurrentPage('messages')}>Back to Selection</button>
+            <button onClick={() => {
+              setSelectedServer(null);
+              setSelectedChannel(null);
+              setMessages([]); // Clear previous messages
+              setCurrentPage('messages'); // Go back to the server/channel selection page
+            }}>
+              Back to Selection
+            </button>
           </div>
           <div className="message-history">
             {messages
