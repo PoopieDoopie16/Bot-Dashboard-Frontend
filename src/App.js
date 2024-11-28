@@ -109,7 +109,8 @@ function App() {
         <div>
           <h2>Messages</h2>
           <div>
-            <button onClick={() => setCurrentPage('dashboard')}>Back to Dashboard</button>
+            {/* Button changed to "Back to Selection" */}
+            <button onClick={() => setCurrentPage('messages')}>Back to Selection</button>
           </div>
           <div className="message-history">
             {messages
